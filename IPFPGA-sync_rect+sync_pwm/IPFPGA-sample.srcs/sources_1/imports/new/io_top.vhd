@@ -185,11 +185,11 @@ architecture Behavioral of io_top is
     signal cnt_reg : std_logic_vector (26 downto 0) := B"000" & X"000000";
     signal led_reg : std_logic_vector (2 downto 0) := B"001";
 
-    attribute mark_debug : string;
-    attribute mark_debug of ad_0_data_crnt: signal is "true";
-    attribute mark_debug of ad_0_data_peak: signal is "true";
-    attribute mark_debug of ad_1_data_crnt: signal is "true";
-    attribute mark_debug of ad_1_data_peak: signal is "true";
+--    attribute mark_debug : string;
+--    attribute mark_debug of ad_0_data_crnt: signal is "true";
+--    attribute mark_debug of ad_0_data_peak: signal is "true";
+--    attribute mark_debug of ad_1_data_crnt: signal is "true";
+--    attribute mark_debug of ad_1_data_peak: signal is "true";
 
 begin
 
@@ -416,11 +416,12 @@ begin
                 ad_0_data_peak_tmp <= X"0000" & X"0000";
             else
                 if ad_0_data_crnt(31) = '0' and ad_0_data_prvs(31) = '0' then
-                    if ad_0_data_crnt > ad_0_data_prvs then
+                    if ad_0_data_crnt > ad_0_data_peak_tmp then
                         ad_0_data_peak_tmp <= ad_0_data_crnt;
                     end if;
                 elsif ad_0_data_crnt(31) = '1' and ad_0_data_prvs(31) = '0' then
                     ad_0_data_peak <= ad_0_data_peak_tmp;
+                    ad_0_data_peak_tmp <= X"0000" & X"0000";
                 end if;
             end if;
         end if;
@@ -434,11 +435,12 @@ begin
                 ad_1_data_peak_tmp <= X"0000" & X"0000";
             else
                 if ad_1_data_crnt(31) = '0' and ad_1_data_prvs(31) = '0' then
-                    if ad_1_data_crnt > ad_1_data_prvs then
+                    if ad_1_data_crnt > ad_1_data_peak_tmp then
                         ad_1_data_peak_tmp <= ad_1_data_crnt;
                     end if;
                 elsif ad_1_data_crnt(31) = '1' and ad_1_data_prvs(31) = '0' then
                     ad_1_data_peak <= ad_1_data_peak_tmp;
+                    ad_1_data_peak_tmp <= X"0000" & X"0000";
                 end if;
             end if;
         end if;

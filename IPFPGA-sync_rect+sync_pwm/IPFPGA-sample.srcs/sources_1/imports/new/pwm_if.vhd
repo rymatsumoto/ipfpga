@@ -91,9 +91,11 @@ architecture Behavioral of pwm_if is
     signal gate_en_pwmc_b : std_logic := '0';
     
     attribute mark_debug : string;
+    attribute mark_debug of sync_in_crnt: signal is "true";
+    attribute mark_debug of sync_in_r: signal is "true";
     attribute mark_debug of sync_cnt: signal is "true";
---    attribute mark_debug of cnt_rst_pwmc: signal is "true";
---    attribute mark_debug of carrier_cnt_pwmc: signal is "true";
+    attribute mark_debug of cnt_rst_pwmc: signal is "true";
+    attribute mark_debug of carrier_cnt_pwmc: signal is "true";
     attribute mark_debug of pwm_wp: signal is "true";
 
 begin
@@ -181,7 +183,7 @@ begin
             
             if RESET_IN = '1' then
                 sync_cnt <= X"0000";
-            elsif sync_in_r = '1' and sync_cnt > X"03E8" then
+            elsif sync_in_r = '1' and sync_cnt > X"0320" then
                 sync_cnt <= X"0000";
             else
                 sync_cnt <= sync_cnt + 1;
