@@ -181,7 +181,7 @@ begin
             
             if RESET_IN = '1' then
                 sync_cnt <= X"0000";
-            elsif sync_in_r = '1' and sync_cnt > X"03E8" then
+            elsif sync_in_r = '1' and sync_cnt > X"0320" then
                 sync_cnt <= X"0000";
             else
                 sync_cnt <= sync_cnt + 1;

@@ -129,8 +129,8 @@ architecture Behavioral of io_top is
             CLK_IN         : in std_logic;
             RESET_IN       : in std_logic;
             AD_DATA_CRNT   : in std_logic_vector(31 downto 0);
-            LPF_A_FP       : in std_logic_vector(31 downto 0);
-            LPF_B_FP       : in std_logic_vector(31 downto 0);
+            LPF_A_FP       : in std_logic_vector(47 downto 0);
+            LPF_B_FP       : in std_logic_vector(47 downto 0);
             AD_DATA_LPF_CRNT : out std_logic_vector(31 downto 0)
         );
     end component;
@@ -174,14 +174,14 @@ architecture Behavioral of io_top is
     signal ad_6_data_s : std_logic_vector(31 downto 0);
     signal ad_7_data_s : std_logic_vector(31 downto 0);
     
-    signal lpf_a_0_fp : std_logic_vector(31 downto 0);
-    signal lpf_b_0_fp : std_logic_vector(31 downto 0);
-    signal lpf_a_1_fp : std_logic_vector(31 downto 0);
-    signal lpf_b_1_fp : std_logic_vector(31 downto 0);
-    signal lpf_a_2_fp : std_logic_vector(31 downto 0);
-    signal lpf_b_2_fp : std_logic_vector(31 downto 0);
-    signal lpf_a_3_fp : std_logic_vector(31 downto 0);
-    signal lpf_b_3_fp : std_logic_vector(31 downto 0);
+    signal lpf_a_0_fp : std_logic_vector(47 downto 0);
+    signal lpf_b_0_fp : std_logic_vector(47 downto 0);
+    signal lpf_a_1_fp : std_logic_vector(47 downto 0);
+    signal lpf_b_1_fp : std_logic_vector(47 downto 0);
+    signal lpf_a_2_fp : std_logic_vector(47 downto 0);
+    signal lpf_b_2_fp : std_logic_vector(47 downto 0);
+    signal lpf_a_3_fp : std_logic_vector(47 downto 0);
+    signal lpf_b_3_fp : std_logic_vector(47 downto 0);
     
     signal ad_0_data_lpf_crnt : std_logic_vector(31 downto 0);
     signal ad_0_data_lpf_prvs : std_logic_vector(31 downto 0);
@@ -288,14 +288,14 @@ begin
                     when X"12" => gpio_8_15_out_b  <= wr_data_b(7 downto 0); 
                     when X"14" => dout_out_data_b  <= wr_data_b(3 downto 0);
                     
-                    when X"15" => lpf_a_0_fp <= wr_data_b(31 downto 0);
-                    when X"16" => lpf_b_0_fp <= wr_data_b(31 downto 0);
-                    when X"17" => lpf_a_1_fp <= wr_data_b(31 downto 0);
-                    when X"18" => lpf_b_1_fp <= wr_data_b(31 downto 0);
-                    when X"19" => lpf_a_2_fp <= wr_data_b(31 downto 0);
-                    when X"1A" => lpf_b_2_fp <= wr_data_b(31 downto 0);
-                    when X"1B" => lpf_a_3_fp <= wr_data_b(31 downto 0);
-                    when X"1C" => lpf_b_3_fp <= wr_data_b(31 downto 0);
+                    when X"15" => lpf_a_0_fp <= X"0000" & wr_data_b(31 downto 0);
+                    when X"16" => lpf_b_0_fp <= X"0000" & wr_data_b(31 downto 0);
+                    when X"17" => lpf_a_1_fp <= X"0000" & wr_data_b(31 downto 0);
+                    when X"18" => lpf_b_1_fp <= X"0000" & wr_data_b(31 downto 0);
+                    when X"19" => lpf_a_2_fp <= X"0000" & wr_data_b(31 downto 0);
+                    when X"1A" => lpf_b_2_fp <= X"0000" & wr_data_b(31 downto 0);
+                    when X"1B" => lpf_a_3_fp <= X"0000" & wr_data_b(31 downto 0);
+                    when X"1C" => lpf_b_3_fp <= X"0000" & wr_data_b(31 downto 0);
                     --when X"42" => hoge <= wr_data_b;
                     when others => null;
                 end case;
