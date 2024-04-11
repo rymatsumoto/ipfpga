@@ -75,11 +75,6 @@ architecture Behavioral of pwm_if is
     signal dt_b : std_logic_vector (12 downto 0);
     signal dt_bb : std_logic_vector (12 downto 0);
     signal gate_en_b : std_logic := '0';
-    
-    attribute mark_debug : string;
-    attribute mark_debug of pwm_up_dt : signal is "true";
-    attribute mark_debug of pwm_un_dt : signal is "true";
-    attribute mark_debug of gate_en_b : signal is "true";
 
 
 begin

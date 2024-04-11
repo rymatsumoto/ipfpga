@@ -133,7 +133,10 @@ architecture Behavioral of io_top is
             MPC_A          : in std_logic_vector (31 downto 0);
             MPC_B          : in std_logic_vector (31 downto 0);
             MPC_C          : in std_logic_vector (31 downto 0);
-            V1d            : in std_logic_vector (31 downto 0)
+            LPF_A          : in std_logic_vector (47 downto 0);
+            LPF_B          : in std_logic_vector (47 downto 0);
+            V1d            : in std_logic_vector (31 downto 0);
+            P1ref          : in std_logic_vector (31 downto 0)
         );
     end component;
 
@@ -161,7 +164,10 @@ architecture Behavioral of io_top is
     signal mpc_a_b     : std_logic_vector(31 downto 0);
     signal mpc_b_b     : std_logic_vector(31 downto 0);
     signal mpc_c_b     : std_logic_vector(31 downto 0);
+    signal lpf_a_b     : std_logic_vector(47 downto 0);
+    signal lpf_b_b     : std_logic_vector(47 downto 0);
     signal v1d_b       : std_logic_vector(31 downto 0);
+    signal p1ref_b     : std_logic_vector(31 downto 0);
 
     signal ad_update_f : std_logic;
     signal ad_0_data_b : std_logic_vector(31 downto 0);
@@ -271,7 +277,10 @@ begin
                     when X"13" => mpc_a_b <= wr_data_b(31 downto 0);
                     when X"14" => mpc_b_b <= wr_data_b(31 downto 0);
                     when X"15" => mpc_c_b <= wr_data_b(31 downto 0);
-                    when X"16" => v1d_b <= wr_data_b(15 downto 0) & X"0000";
+                    when X"16" => lpf_a_b <= X"0000" & wr_data_b(31 downto 0);
+                    when X"17" => lpf_b_b <= X"0000" & wr_data_b(31 downto 0);
+                    when X"18" => v1d_b <= wr_data_b(15 downto 0) & X"0000";
+                    when X"19" => p1ref_b <= wr_data_b(31 downto 0);
                             
                     --when X"42" => hoge <= wr_data_b;
                     when others => null;
@@ -435,7 +444,10 @@ begin
             MPC_A           => mpc_a_b,
             MPC_B           => mpc_b_b,
             MPC_C           => mpc_c_b,
-            V1d             => v1d_b
+            LPF_A           => lpf_a_b,
+            LPF_B           => lpf_b_b,
+            V1d             => v1d_b,
+            P1ref           => p1ref_b
         );
 
 
