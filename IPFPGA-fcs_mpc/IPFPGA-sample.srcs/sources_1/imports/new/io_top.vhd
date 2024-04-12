@@ -100,24 +100,26 @@ architecture Behavioral of io_top is
 
     component pwm_if is
         port (
-            CLK_IN           : in std_logic;
-            RESET_IN        : in std_logic;
+            CLK_IN         : in std_logic;
+            RESET_IN       : in std_logic;
             nPWM_UP_OUT    : out std_logic; --nUSER_OPT_OUT(0)
             nPWM_UN_OUT    : out std_logic; --nUSER_OPT_OUT(1)
             nPWM_VP_OUT    : out std_logic; --nUSER_OPT_OUT(2)
             nPWM_VN_OUT    : out std_logic; --nUSER_OPT_OUT(3)
             nPWM_WP_OUT    : out std_logic; --nUSER_OPT_OUT(4)
             nPWM_WN_OUT    : out std_logic; --nUSER_OPT_OUT(5)
-            nUSER_OPT_OUT : out std_logic_vector (23 downto 6);
+            nUSER_OPT_OUT  : out std_logic_vector (23 downto 6);
             PWM_SYNCH_FLAG : out std_logic;
 
-            UPDATE    : in std_logic;
-            CARRIER   : in std_logic_vector (15 downto 0);
-            U_REF      : in std_logic_vector (15 downto 0);
-            V_REF      : in std_logic_vector (15 downto 0);
-            W_REF      : in std_logic_vector (15 downto 0);
-            DEADTIME : in std_logic_vector (12 downto 0);
-            GATE_EN  : in std_logic
+            UPDATE        : in std_logic;
+            CARRIER       : in std_logic_vector (15 downto 0);
+            U_REF         : in std_logic_vector (15 downto 0);
+            V_REF         : in std_logic_vector (15 downto 0);
+            W_REF         : in std_logic_vector (15 downto 0);
+            DEADTIME      : in std_logic_vector (12 downto 0);
+            STATE_PRESENT : out std_logic;
+            STATE_NEXT    : in std_logic;
+            GATE_EN       : in std_logic
         );
     end component;
     
@@ -125,6 +127,8 @@ architecture Behavioral of io_top is
         port (
             CLK_IN         : in std_logic;
             RESET_IN       : in std_logic;
+            STATE_PRESENT  : in std_logic;
+            STATE_NEXT     : out std_logic;
             PWM_SYNCH_FLAG : in std_logic;
             I1             : in std_logic_vector (15 downto 0);
             I2             : in std_logic_vector (15 downto 0);
@@ -168,6 +172,9 @@ architecture Behavioral of io_top is
     signal lpf_b_b     : std_logic_vector(47 downto 0);
     signal v1d_b       : std_logic_vector(31 downto 0);
     signal p1ref_b     : std_logic_vector(31 downto 0);
+    
+    signal state_present_b : std_logic := '1';
+    signal state_next_b    : std_logic := '1';
 
     signal ad_update_f : std_logic;
     signal ad_0_data_b : std_logic_vector(31 downto 0);
@@ -409,25 +416,27 @@ begin
     --PWM
     u_pwm_if : pwm_if
         port map(
-            CLK_IN           => CLK100M,
-            RESET_IN        => RESET_IN,
+            CLK_IN         => CLK100M,
+            RESET_IN       => RESET_IN,
             nPWM_UP_OUT    => nPWM_UP_OUT,
             nPWM_UN_OUT    => nPWM_UN_OUT,
             nPWM_VP_OUT    => nPWM_VP_OUT,
             nPWM_VN_OUT    => nPWM_VN_OUT,
             nPWM_WP_OUT    => nPWM_WP_OUT,
             nPWM_WN_OUT    => nPWM_WN_OUT,
-            nUSER_OPT_OUT => nUSER_OPT_OUT,
+            nUSER_OPT_OUT  => nUSER_OPT_OUT,
             PWM_SYNCH_FLAG => pwm_synch_flag,
 
             --UPDATE    => pwm_update_b, -- Manual update
-            UPDATE    => wr_start_ff, -- Automatic update
-            CARRIER   => pwm_carrier_b,
-            U_REF    => pwm_u_ref_b,
-            V_REF    => pwm_v_ref_b,
-            W_REF    => pwm_w_ref_b,
-            DEADTIME => pwm_deadtime_b,
-            GATE_EN  => pwm_gate_en_b
+            UPDATE        => wr_start_ff, -- Automatic update
+            CARRIER       => pwm_carrier_b,
+            U_REF         => pwm_u_ref_b,
+            V_REF         => pwm_v_ref_b,
+            W_REF         => pwm_w_ref_b,
+            DEADTIME      => pwm_deadtime_b,
+            STATE_PRESENT => state_present_b,
+            STATE_NEXT    => state_next_b,
+            GATE_EN       => pwm_gate_en_b
         );
 
 
@@ -436,6 +445,8 @@ begin
         port map(
             CLK_IN          => CLK100M,
             RESET_IN        => RESET_IN,
+            STATE_PRESENT   => state_present_b,
+            STATE_NEXT      => state_next_b,
             PWM_SYNCH_FLAG  => pwm_synch_flag,
             I1              => ad_0_data_s(15 downto 0),
             I2              => ad_1_data_s(15 downto 0),

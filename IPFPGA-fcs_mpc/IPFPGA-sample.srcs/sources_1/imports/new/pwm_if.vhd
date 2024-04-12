@@ -34,6 +34,8 @@ entity pwm_if is
         V_REF    : in std_logic_vector (15 downto 0);
         W_REF    : in std_logic_vector (15 downto 0);
         DEADTIME : in std_logic_vector (12 downto 0);
+        STATE_PRESENT : out std_logic;
+        STATE_NEXT : in std_logic;
         GATE_EN  : in std_logic
     );
 end pwm_if;
@@ -52,6 +54,7 @@ architecture Behavioral of pwm_if is
 
     signal carrier_cnt_max_b : std_logic_vector (15 downto 0);
     signal carrier_cnt_max_bb : std_logic_vector (15 downto 0);
+    signal carrier_cnt_hlf : std_logic_vector (15 downto 0);
     signal carrier_cnt       : std_logic_vector (15 downto 0);
     signal carrier_up_down : std_logic;
     signal u_ref_b : std_logic_vector (15 downto 0);
@@ -75,9 +78,35 @@ architecture Behavioral of pwm_if is
     signal dt_b : std_logic_vector (12 downto 0);
     signal dt_bb : std_logic_vector (12 downto 0);
     signal gate_en_b : std_logic := '0';
+    
+    signal state_present_b : std_logic := '1';
+    
+    attribute mark_debug : string;
+    attribute mark_debug of gate_en_b : signal is "true";
+    attribute mark_debug of pwm_up : signal is "true";
+    attribute mark_debug of pwm_un : signal is "true";
+    attribute mark_debug of pwm_vp : signal is "true";
+    attribute mark_debug of pwm_vn : signal is "true";
+    attribute mark_debug of pwm_up_dt : signal is "true";
+    attribute mark_debug of pwm_un_dt : signal is "true";
+    attribute mark_debug of pwm_vp_dt : signal is "true";
+    attribute mark_debug of pwm_vn_dt : signal is "true";
 
 
 begin
+
+    carrier_cnt_hlf <= '0' & carrier_cnt_max_bb(15 downto 1);
+    
+    process(CLK_IN)
+    begin
+        if CLK_IN'event and CLK_IN = '1' then
+            if RESET_IN = '1' then
+                state_present_b <= '1';
+            elsif carrier_cnt = carrier_cnt_hlf then
+                state_present_b <= STATE_NEXT;
+            end if;
+        end if;
+    end process;
 
     process(CLK_IN)
     begin
@@ -140,10 +169,13 @@ begin
             if RESET_IN = '1' then
                 pwm_up <= '0';
                 pwm_un <= '0';
-            elsif carrier_cnt >= u_ref_bb then
+            elsif state_present_b = '0' then
                 pwm_up <= '0';
                 pwm_un <= '1';
-            else
+            elsif state_present_b = '1' and carrier_cnt >= u_ref_bb then
+                pwm_up <= '0';
+                pwm_un <= '1';
+            elsif state_present_b = '1' and carrier_cnt < u_ref_bb then
                 pwm_up <= '1';
                 pwm_un <= '0';
             end if;
@@ -151,10 +183,13 @@ begin
             if RESET_IN = '1' then
                 pwm_vp <= '0';
                 pwm_vn <= '0';
-            elsif carrier_cnt >= v_ref_bb then
+            elsif state_present_b = '0' then
+                pwm_vp <= '0';
+                pwm_vn <= '1';
+            elsif state_present_b = '1' and carrier_cnt >= v_ref_bb then
                 pwm_vp <= '1';
                 pwm_vn <= '0';
-            else
+            elsif state_present_b = '1' and carrier_cnt < v_ref_bb then
                 pwm_vp <= '0';
                 pwm_vn <= '1';
             end if;
@@ -218,6 +253,7 @@ begin
     nUSER_OPT_OUT(23) <= not (pwm_wn_dt and gate_en_b);
     
     PWM_SYNCH_FLAG <= carrier_up_down;
+    STATE_PRESENT <= state_present_b;
 
 end Behavioral;
 

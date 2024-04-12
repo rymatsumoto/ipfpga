@@ -29,6 +29,8 @@ entity fcs_mpc_if is
     port (
         CLK_IN : in std_logic;
         RESET_IN : in std_logic;
+        STATE_PRESENT : in std_logic;
+        STATE_NEXT : out std_logic;
         PWM_SYNCH_FLAG : in std_logic;
         I1 : in std_logic_vector (15 downto 0); -- integer 16 bit
         I2 : in std_logic_vector (15 downto 0); -- integer 16 bit
@@ -48,8 +50,7 @@ architecture Behavioral of fcs_mpc_if is
 
     signal counter : std_logic_vector (15 downto 0);
     signal pwm_synch_flag_prvs : std_logic := '0';
-    signal state_present : std_logic := '1';
-    signal state_next : std_logic := '1';
+    signal state_next_b : std_logic := '1';
     
     signal i1_peak : std_logic_vector (31 downto 0); -- integer 16 bit, fractional 16 bit
     signal i2_peak : std_logic_vector (31 downto 0); -- integer 16 bit, fractional 16 bit
@@ -78,10 +79,12 @@ architecture Behavioral of fcs_mpc_if is
     attribute mark_debug of p1_next_ON_lpf : signal is "true";
     attribute mark_debug of p1_next_OFF_lpf : signal is "true";
     attribute mark_debug of P1ref : signal is "true";
-    attribute mark_debug of state_next : signal is "true";
+    attribute mark_debug of state_next_b : signal is "true";
 
 begin
 
+    STATE_NEXT <= state_next_b;
+    
     i1_peak_debug <= i1_peak(31 downto 16);
     i2_peak_debug <= i2_peak(31 downto 16);
     
@@ -148,11 +151,11 @@ begin
                 p1_present <= X"0000" & X"0000" & X"0000";
             else
                 if counter = PEAK_COUNT_I1 + 1 then
-                    if state_present = '1' then
+                    if STATE_PRESENT = '1' then
                         p1_present_32_tmp := i1_peak(31 downto 16) * V1d(31 downto 16);
                         p1_present_32 := '0' & p1_present_32_tmp(31 downto 1); -- divide by 2
                         p1_present <= p1_present_32 & X"0000"; -- add fractional bit
-                    elsif state_present = '0' then
+                    elsif STATE_PRESENT = '0' then
                         p1_present <= X"0000" & X"0000" & X"0000";
                     end if;
                 end if;
@@ -269,13 +272,13 @@ begin
     begin
         if CLK_IN'event and CLK_IN = '1' then
             if RESET_IN = '1' then
-                state_next <= '1';
+                state_next_b <= '1';
             else
                 if counter = PEAK_COUNT_I1 + 6 then
                     if abs(P1ref - p1_next_ON_lpf) > abs(P1ref - p1_next_OFF_lpf) then
-                        state_next <= '0';
+                        state_next_b <= '0';
                     else
-                        state_next <= '1';
+                        state_next_b <= '1';
                     end if;
                 end if;
             end if;
