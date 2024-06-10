@@ -140,7 +140,8 @@ architecture Behavioral of io_top is
             LPF_A          : in std_logic_vector (47 downto 0);
             LPF_B          : in std_logic_vector (47 downto 0);
             V1d            : in std_logic_vector (31 downto 0);
-            P1ref          : in std_logic_vector (31 downto 0)
+            P1ref          : in std_logic_vector (31 downto 0);
+            P1_LPF         : out std_logic_vector (31 downto 0)
         );
     end component;
 
@@ -175,6 +176,7 @@ architecture Behavioral of io_top is
     
     signal state_present_b : std_logic := '1';
     signal state_next_b    : std_logic := '1';
+    signal p1_lpf_b    : std_logic_vector(31 downto 0);
 
     signal ad_update_f : std_logic;
     signal ad_0_data_b : std_logic_vector(31 downto 0);
@@ -328,6 +330,8 @@ begin
                     when X"14" => rd_data_b <= X"0000" & X"000" & dout_out_data_b;
                     when X"15" => rd_data_b <= X"0000" & X"000" & din_in_data_b;
                     when X"16" => rd_data_b <= X"0000" & X"00" & user_sw_in_data_b;
+                    
+                    when X"17" => rd_data_b <= p1_lpf_b;
 
                     --when X"42" => rd_data_b <= hoge;
                     when others => null;
@@ -458,7 +462,8 @@ begin
             LPF_A           => lpf_a_b,
             LPF_B           => lpf_b_b,
             V1d             => v1d_b,
-            P1ref           => p1ref_b
+            P1ref           => p1ref_b,
+            P1_LPF          => p1_lpf_b
         );
 
 

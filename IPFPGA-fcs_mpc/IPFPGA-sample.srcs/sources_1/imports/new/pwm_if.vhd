@@ -186,10 +186,10 @@ begin
             elsif state_present_b = '0' then
                 pwm_vp <= '0';
                 pwm_vn <= '1';
-            elsif state_present_b = '1' and carrier_cnt >= v_ref_bb then
+            elsif state_present_b = '1' and carrier_cnt > v_ref_bb then
                 pwm_vp <= '1';
                 pwm_vn <= '0';
-            elsif state_present_b = '1' and carrier_cnt < v_ref_bb then
+            elsif state_present_b = '1' and carrier_cnt <= v_ref_bb then
                 pwm_vp <= '0';
                 pwm_vn <= '1';
             end if;

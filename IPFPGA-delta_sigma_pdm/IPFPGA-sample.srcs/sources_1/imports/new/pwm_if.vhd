@@ -26,6 +26,7 @@ entity pwm_if is
         nPWM_WP_OUT    : out std_logic; --nUSER_OPT_OUT(4)
         nPWM_WN_OUT    : out std_logic; --nUSER_OPT_OUT(5)
         nUSER_OPT_OUT : out std_logic_vector (23 downto 6);
+        PWM_SYNCH_FLAG : out std_logic;
 
         UPDATE    : in std_logic;
         CARRIER   : in std_logic_vector (15 downto 0);
@@ -35,7 +36,8 @@ entity pwm_if is
         DEADTIME : in std_logic_vector (12 downto 0);
         GATE_EN  : in std_logic;
         PDM_REF  : in std_logic_vector (15 downto 0);
-        REF_FULL_SCALE : in std_logic_vector (15 downto 0)
+        REF_FULL_SCALE : in std_logic_vector (15 downto 0);
+        STATE_PRESENT  : out std_logic
     );
 end pwm_if;
 
@@ -81,6 +83,8 @@ architecture Behavioral of pwm_if is
     signal pdm_un : std_logic;
     signal pdm_vp : std_logic;
     signal pdm_vn : std_logic;
+    
+    signal state_present_b : std_logic := '1';
 
 
 begin
@@ -192,12 +196,14 @@ begin
                 if carrier_cnt = ('0' & carrier_cnt_max_bb(15 downto 1)) then
                     if accumulator >= REF_FULL_SCALE then
                         accumulator <= accumulator + PDM_REF - REF_FULL_SCALE;
+                        state_present_b <= '1';
                         pdm_up <= pwm_up;
                         pdm_un <= pwm_un;
                         pdm_vp <= pwm_vp;
                         pdm_vn <= pwm_vn;
                     else
                         accumulator <= accumulator + PDM_REF;
+                        state_present_b <= '0';
                         pdm_up <= '0';
                         pdm_un <= '1';
                         pdm_vp <= '0';
@@ -251,6 +257,9 @@ begin
     nUSER_OPT_OUT(21) <= not (pwm_vn_dt and gate_en_b);
     nUSER_OPT_OUT(22) <= not (pwm_wp_dt and gate_en_b);
     nUSER_OPT_OUT(23) <= not (pwm_wn_dt and gate_en_b);
+    
+    PWM_SYNCH_FLAG <= carrier_up_down;
+    STATE_PRESENT <= state_present_b;
 
 end Behavioral;
 

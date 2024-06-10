@@ -109,6 +109,7 @@ architecture Behavioral of io_top is
             nPWM_WP_OUT    : out std_logic; --nUSER_OPT_OUT(4)
             nPWM_WN_OUT    : out std_logic; --nUSER_OPT_OUT(5)
             nUSER_OPT_OUT : out std_logic_vector (23 downto 6);
+            PWM_SYNCH_FLAG : out std_logic;
 
             UPDATE    : in std_logic;
             CARRIER   : in std_logic_vector (15 downto 0);
@@ -118,7 +119,23 @@ architecture Behavioral of io_top is
             DEADTIME : in std_logic_vector (12 downto 0);
             GATE_EN  : in std_logic;
             PDM_REF  : in std_logic_vector (15 downto 0);
-            REF_FULL_SCALE : in std_logic_vector (15 downto 0)
+            REF_FULL_SCALE : in std_logic_vector (15 downto 0);
+            STATE_PRESENT  : out std_logic
+        );
+    end component;
+    
+    component lpf_if is
+        port (
+            CLK_IN         : in std_logic;
+            RESET_IN       : in std_logic;
+            STATE_PRESENT  : in std_logic;
+            PWM_SYNCH_FLAG : in std_logic;
+            I1             : in std_logic_vector (15 downto 0); -- integer 16 bit
+            PEAK_COUNT_I1  : in std_logic_vector (15 downto 0);
+            LPF_A          : in std_logic_vector (47 downto 0); -- integer 32 bit, fractional 16 bit
+            LPF_B          : in std_logic_vector (47 downto 0); -- integer 32 bit, fractional 16 bit
+            V1d            : in std_logic_vector (31 downto 0); -- integer 16 bit, fractional 16 bit
+            P1_LPF         : out std_logic_vector (31 downto 0) -- integer 32 bit
         );
     end component;
 
@@ -139,6 +156,14 @@ architecture Behavioral of io_top is
     signal pwm_deadtime_b : std_logic_vector(12 downto 0);
     signal pwm_gate_en_b  : std_logic;
     signal pwm_update_b    : std_logic;
+    signal pwm_synch_flag : std_logic;
+    signal peak_count_i1_b : std_logic_vector(15 downto 0);
+    
+    signal lpf_a_b     : std_logic_vector(47 downto 0);
+    signal lpf_b_b     : std_logic_vector(47 downto 0);
+    signal v1d_b       : std_logic_vector(31 downto 0);
+    signal state_present_b : std_logic := '1';
+    signal p1_lpf_b    : std_logic_vector(31 downto 0);
 
     signal ad_update_f : std_logic;
     signal ad_0_data_b : std_logic_vector(31 downto 0);
@@ -237,12 +262,18 @@ begin
                     when X"06" => pwm_gate_en_b  <= wr_data_b(0);
                     when X"07" => pwm_update_b   <= wr_data_b(0);
                     
-                    when X"10" => gpio_16_23_out_b <= wr_data_b(7 downto 0);
-                    when X"12" => gpio_8_15_out_b  <= wr_data_b(7 downto 0); 
-                    when X"14" => dout_out_data_b  <= wr_data_b(3 downto 0);
+                    when X"08" => gpio_16_23_out_b <= wr_data_b(7 downto 0);
+                    when X"09" => gpio_8_15_out_b  <= wr_data_b(7 downto 0); 
+                    when X"10" => dout_out_data_b  <= wr_data_b(3 downto 0);
                     
-                    when X"15" => pdm_ref_b        <= wr_data_b(15 downto 0);
-                    when X"16" => ref_full_scale_b <= wr_data_b(15 downto 0);
+                    when X"11" => peak_count_i1_b  <= wr_data_b(15 downto 0);
+                    
+                    when X"16" => lpf_a_b <= X"0000" & wr_data_b(31 downto 0);
+                    when X"17" => lpf_b_b <= X"0000" & wr_data_b(31 downto 0);
+                    when X"18" => v1d_b <= wr_data_b(15 downto 0) & X"0000";
+                    
+                    when X"19" => pdm_ref_b        <= wr_data_b(15 downto 0);
+                    when X"20" => ref_full_scale_b <= wr_data_b(15 downto 0);
                             
                     --when X"42" => hoge <= wr_data_b;
                     when others => null;
@@ -283,6 +314,8 @@ begin
                     when X"14" => rd_data_b <= X"0000" & X"000" & dout_out_data_b;
                     when X"15" => rd_data_b <= X"0000" & X"000" & din_in_data_b;
                     when X"16" => rd_data_b <= X"0000" & X"00" & user_sw_in_data_b;
+                    
+                    when X"17" => rd_data_b <= p1_lpf_b;
 
                     --when X"42" => rd_data_b <= hoge;
                     when others => null;
@@ -380,6 +413,7 @@ begin
             nPWM_WP_OUT    => nPWM_WP_OUT,
             nPWM_WN_OUT    => nPWM_WN_OUT,
             nUSER_OPT_OUT => nUSER_OPT_OUT,
+            PWM_SYNCH_FLAG => pwm_synch_flag,
 
             --UPDATE    => pwm_update_b, -- Manual update
             UPDATE    => wr_start_ff, -- Automatic update
@@ -390,7 +424,24 @@ begin
             DEADTIME => pwm_deadtime_b,
             GATE_EN  => pwm_gate_en_b,
             PDM_REF  => pdm_ref_b,
-            REF_FULL_SCALE => ref_full_scale_b
+            REF_FULL_SCALE => ref_full_scale_b,
+            STATE_PRESENT  => state_present_b
+        );
+        
+        
+    --LPF
+    u_lpf_if : lpf_if
+        port map(
+            CLK_IN          => CLK100M,
+            RESET_IN        => RESET_IN,
+            STATE_PRESENT   => state_present_b,
+            PWM_SYNCH_FLAG  => pwm_synch_flag,
+            I1              => ad_0_data_s(15 downto 0),
+            PEAK_COUNT_I1   => peak_count_i1_b,
+            LPF_A           => lpf_a_b,
+            LPF_B           => lpf_b_b,
+            V1d             => v1d_b,
+            P1_LPF          => p1_lpf_b
         );
 
 

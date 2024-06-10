@@ -42,7 +42,8 @@ entity fcs_mpc_if is
         LPF_A : in std_logic_vector (47 downto 0); -- integer 32 bit, fractional 16 bit
         LPF_B : in std_logic_vector (47 downto 0); -- integer 32 bit, fractional 16 bit
         V1d : in std_logic_vector (31 downto 0); -- integer 16 bit, fractional 16 bit
-        P1ref : in std_logic_vector(31 downto 0) -- integer 32 bit
+        P1ref : in std_logic_vector(31 downto 0); -- integer 32 bit
+        P1_LPF : out std_logic_vector (31 downto 0) -- integer 32 bit
     );
 end fcs_mpc_if;
 
@@ -70,16 +71,16 @@ architecture Behavioral of fcs_mpc_if is
     
     attribute mark_debug : string;
     -- attribute mark_debug of counter : signal is "true";
-    -- attribute mark_debug of i1_peak_debug : signal is "true";
-    -- attribute mark_debug of i2_peak_debug : signal is "true";
+     attribute mark_debug of i1_peak_debug : signal is "true";
+     attribute mark_debug of i2_peak_debug : signal is "true";
     -- attribute mark_debug of i1_next_ON : signal is "true";
     -- attribute mark_debug of p1_present_debug : signal is "true";
     -- attribute mark_debug of p1_next_ON_debug : signal is "true";
     -- attribute mark_debug of p1_present_lpf_debug : signal is "true";
-    attribute mark_debug of p1_next_ON_lpf : signal is "true";
-    attribute mark_debug of p1_next_OFF_lpf : signal is "true";
-    attribute mark_debug of P1ref : signal is "true";
-    attribute mark_debug of state_next_b : signal is "true";
+--    attribute mark_debug of p1_next_ON_lpf : signal is "true";
+--    attribute mark_debug of p1_next_OFF_lpf : signal is "true";
+--    attribute mark_debug of P1ref : signal is "true";
+--    attribute mark_debug of state_next_b : signal is "true";
 
 begin
 
@@ -284,5 +285,7 @@ begin
             end if;
         end if;
     end process;
+    
+    P1_LPF <= p1_present_lpf(47 downto 16);
             
 end Behavioral;
