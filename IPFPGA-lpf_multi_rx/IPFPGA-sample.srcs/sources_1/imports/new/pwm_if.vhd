@@ -29,13 +29,12 @@ entity pwm_if is
 
         UPDATE    : in std_logic;
         CARRIER   : in std_logic_vector (15 downto 0);
-        CNT_REF_RECT : in std_logic_vector (15 downto 0);
         CNT_REF_PWMC : in std_logic_vector (15 downto 0);
         U_REF    : in std_logic_vector (15 downto 0);
         V_REF    : in std_logic_vector (15 downto 0);
         W_REF    : in std_logic_vector (15 downto 0);
         DEADTIME : in std_logic_vector (12 downto 0);
-        GATE_EN_RECT  : in std_logic;
+        GATE_EN  : in std_logic;
         GATE_EN_PWMC  : in std_logic;
         SYNC_IN  : in std_logic
     );
@@ -55,13 +54,11 @@ architecture Behavioral of pwm_if is
 
     signal carrier_cnt_max_b : std_logic_vector (15 downto 0);
     signal carrier_cnt_max_bb : std_logic_vector (15 downto 0);
-    signal carrier_cnt_rect   : std_logic_vector (15 downto 0);
+    signal carrier_cnt   : std_logic_vector (15 downto 0);
     signal carrier_cnt_pwmc   : std_logic_vector (15 downto 0);
-    signal carrier_up_down_rect : std_logic;
+    signal carrier_up_down : std_logic;
     signal carrier_up_down_pwmc : std_logic;
-    signal cnt_ref_rect_b : std_logic_vector (15 downto 0);
     signal cnt_ref_pwmc_b : std_logic_vector (15 downto 0);
-    signal cnt_rst_rect : std_logic;
     signal cnt_rst_pwmc : std_logic;
     signal sync_in_prvs : std_logic;
     signal sync_in_crnt : std_logic;
@@ -87,13 +84,13 @@ architecture Behavioral of pwm_if is
 --    signal pwm_wn_dt : std_logic := '0';
     signal dt_b : std_logic_vector (12 downto 0);
     signal dt_bb : std_logic_vector (12 downto 0);
-    signal gate_en_rect_b : std_logic := '0';
+    signal gate_en_b : std_logic := '0';
     signal gate_en_pwmc_b : std_logic := '0';
     
     attribute mark_debug : string;
     attribute mark_debug of sync_cnt: signal is "true";
---    attribute mark_debug of cnt_rst_pwmc: signal is "true";
---    attribute mark_debug of carrier_cnt_pwmc: signal is "true";
+    attribute mark_debug of sync_in_crnt: signal is "true";
+    attribute mark_debug of sync_in_r: signal is "true";
     attribute mark_debug of pwm_wp: signal is "true";
 
 begin
@@ -102,18 +99,17 @@ begin
     begin
         if CLK_IN'event and CLK_IN = '1' then
             if RESET_IN = '1' then
-                gate_en_rect_b <= '0';
+                gate_en_b <= '0';
                 gate_en_pwmc_b <= '0';
             else
-                gate_en_rect_b <= GATE_EN_RECT;
+                gate_en_b <= GATE_EN;
                 gate_en_pwmc_b <= GATE_EN_PWMC;
             end if;
 
             if RESET_IN = '1' then
                 carrier_cnt_max_b  <= X"024C"; -- 85kHz
-                carrier_cnt_rect   <= X"0000";
+                carrier_cnt   <= X"0000";
                 carrier_cnt_pwmc   <= X"0000";
-                cnt_ref_rect_b     <= X"024C"; -- 85kHz
                 cnt_ref_pwmc_b     <= X"0126"; -- 85kHz
                 u_ref_b <= X"0126"; -- m = 0.5
                 v_ref_b <= X"0126"; -- m = 0.5
@@ -121,7 +117,6 @@ begin
                 dt_b <= '0' & X"00A"; -- 100ns
             elsif UPDATE = '1' then
                 carrier_cnt_max_b <= CARRIER;
-                cnt_ref_rect_b    <= CNT_REF_RECT;
                 cnt_ref_pwmc_b    <= CNT_REF_PWMC;
                 u_ref_b <= U_REF;
                 v_ref_b <= V_REF;
@@ -130,28 +125,26 @@ begin
             end if;       
 
             if RESET_IN = '1' then
-                carrier_up_down_rect <= '1';
+                carrier_up_down <= '1';
                 carrier_up_down_pwmc <= '1';
                 carrier_cnt_max_bb <= X"024C";
-            elsif cnt_rst_rect = '1' then
-                carrier_up_down_rect <= '1';
             elsif cnt_rst_pwmc = '1' then
                 carrier_up_down_pwmc <= '1';
-            elsif carrier_cnt_rect >= (carrier_cnt_max_bb -1) and carrier_up_down_rect = '1' then
-                carrier_up_down_rect <= '0';
+            elsif carrier_cnt = X"0001" and carrier_up_down = '0' then
+                carrier_up_down <= '1';
+            elsif carrier_cnt >= (carrier_cnt_max_bb -1) and carrier_up_down = '1' then
+                carrier_up_down <= '0';
                 carrier_cnt_max_bb <= carrier_cnt_max_b;
             elsif carrier_cnt_pwmc >= (carrier_cnt_max_bb -1) and carrier_up_down_pwmc = '1' then
                 carrier_up_down_pwmc <= '0';
             end if;
 
             if RESET_IN = '1' then
-                carrier_cnt_rect <= X"0000";
-            elsif cnt_rst_rect = '1' then
-                carrier_cnt_rect <= X"0000";
-            elsif carrier_up_down_rect = '1' then
-                carrier_cnt_rect <= carrier_cnt_rect + 1;
-            elsif carrier_up_down_rect = '0' and carrier_cnt_rect > X"0000" then
-                carrier_cnt_rect <= carrier_cnt_rect - 1;
+                carrier_cnt <= X"0000";
+            elsif carrier_up_down = '1' then
+                carrier_cnt <= carrier_cnt + 1;
+            else
+                carrier_cnt <= carrier_cnt - 1;
             end if;
             
             if RESET_IN = '1' then
@@ -188,14 +181,10 @@ begin
             end if;
             
             if RESET_IN = '1' then
-                cnt_rst_rect <= '0';
                 cnt_rst_pwmc <= '0';
-            elsif sync_cnt = cnt_ref_rect_b then
-                cnt_rst_rect <= '1';
             elsif sync_cnt = cnt_ref_pwmc_b then
                 cnt_rst_pwmc <= '1';
             else
-                cnt_rst_rect <= '0';
                 cnt_rst_pwmc <= '0';
             end if;
 
@@ -209,7 +198,7 @@ begin
                 u_ref_bb <= X"0126"; -- m = 0.5
                 v_ref_bb <= X"0126"; -- m = 0.5
                 w_ref_bb <= X"0126"; -- m = 0.5
-            elsif carrier_cnt_rect = (carrier_cnt_max_bb -1) and carrier_up_down_rect = '1' then
+            elsif carrier_cnt = (carrier_cnt_max_bb -1) and carrier_up_down = '1' then
                 u_ref_bb <= u_ref_b;
                 v_ref_bb <= v_ref_b;
                 w_ref_bb <= w_ref_b;
@@ -218,7 +207,7 @@ begin
             if RESET_IN = '1' then
                 pwm_up <= '0';
                 pwm_un <= '0';
-            elsif carrier_cnt_rect >= u_ref_bb then
+            elsif carrier_cnt >= u_ref_bb then
                 pwm_up <= '0';
                 pwm_un <= '1';
             else
@@ -229,7 +218,7 @@ begin
             if RESET_IN = '1' then
                 pwm_vp <= '0';
                 pwm_vn <= '0';
-            elsif carrier_cnt_rect >= v_ref_bb then
+            elsif carrier_cnt >= v_ref_bb then
                 pwm_vp <= '1';
                 pwm_vn <= '0';
             else
@@ -256,7 +245,7 @@ begin
         if CLK_IN'event and CLK_IN = '1' then
             if RESET_IN = '1' then
                 dt_bb <= '0' & X"00A"; -- 100ns
-            elsif carrier_cnt_rect = (carrier_cnt_max_bb -1) then
+            elsif carrier_cnt = (carrier_cnt_max_bb -1) then
                 dt_bb <= dt_b;
             end if;
         end if;
@@ -269,31 +258,31 @@ begin
 --    dt_wp : deadtime_if port map (CLK_IN => CLK_IN, RESET_IN => RESET_IN, DT => dt_bb, G_IN => pwm_wp, G_OUT => pwm_wp_dt);
 --    dt_wn : deadtime_if port map (CLK_IN => CLK_IN, RESET_IN => RESET_IN, DT => dt_bb, G_IN => pwm_wn, G_OUT => pwm_wn_dt);
 
-    nPWM_UP_OUT <= not (pwm_up_dt and gate_en_rect_b);
-    nPWM_UN_OUT <= not (pwm_un_dt and gate_en_rect_b);
-    nPWM_VP_OUT <= not (pwm_vp_dt and gate_en_rect_b);
-    nPWM_VN_OUT <= not (pwm_vn_dt and gate_en_rect_b);
+    nPWM_UP_OUT <= not (pwm_up_dt and gate_en_b);
+    nPWM_UN_OUT <= not (pwm_un_dt and gate_en_b);
+    nPWM_VP_OUT <= not (pwm_vp_dt and gate_en_b);
+    nPWM_VN_OUT <= not (pwm_vn_dt and gate_en_b);
     nPWM_WP_OUT <= not (pwm_wp and gate_en_pwmc_b);
     nPWM_WN_OUT <= not (pwm_wn and gate_en_pwmc_b);
 
-    nUSER_OPT_OUT(6) <= not (pwm_up_dt and gate_en_rect_b);
-    nUSER_OPT_OUT(7) <= not (pwm_un_dt and gate_en_rect_b);
-    nUSER_OPT_OUT(8) <= not (pwm_vp_dt and gate_en_rect_b);
-    nUSER_OPT_OUT(9) <= not (pwm_vn_dt and gate_en_rect_b);
+    nUSER_OPT_OUT(6) <= not (pwm_up_dt and gate_en_b);
+    nUSER_OPT_OUT(7) <= not (pwm_un_dt and gate_en_b);
+    nUSER_OPT_OUT(8) <= not (pwm_vp_dt and gate_en_b);
+    nUSER_OPT_OUT(9) <= not (pwm_vn_dt and gate_en_b);
     nUSER_OPT_OUT(10) <= not (pwm_wp and gate_en_pwmc_b);
     nUSER_OPT_OUT(11) <= not (pwm_wn and gate_en_pwmc_b);
-    nUSER_OPT_OUT(12) <= not (pwm_up_dt and gate_en_rect_b);
-    nUSER_OPT_OUT(13) <= not (pwm_un_dt and gate_en_rect_b);
-    nUSER_OPT_OUT(14) <= not (pwm_vp_dt and gate_en_rect_b);
-    nUSER_OPT_OUT(15) <= not (pwm_vn_dt and gate_en_rect_b);
+    nUSER_OPT_OUT(12) <= not (pwm_up_dt and gate_en_b);
+    nUSER_OPT_OUT(13) <= not (pwm_un_dt and gate_en_b);
+    nUSER_OPT_OUT(14) <= not (pwm_vp_dt and gate_en_b);
+    nUSER_OPT_OUT(15) <= not (pwm_vn_dt and gate_en_b);
     nUSER_OPT_OUT(16) <= not (pwm_wp and gate_en_pwmc_b);
     nUSER_OPT_OUT(17) <= not (pwm_wn and gate_en_pwmc_b);
-    nUSER_OPT_OUT(18) <= not (pwm_up_dt and gate_en_rect_b);
-    nUSER_OPT_OUT(19) <= not (pwm_un_dt and gate_en_rect_b);
-    nUSER_OPT_OUT(20) <= not (pwm_vp_dt and gate_en_rect_b);
-    nUSER_OPT_OUT(21) <= not (pwm_vn_dt and gate_en_rect_b);
-    nUSER_OPT_OUT(22) <= not (pwm_wp and gate_en_rect_b);
-    nUSER_OPT_OUT(23) <= not (pwm_wn and gate_en_rect_b);
+    nUSER_OPT_OUT(18) <= not (pwm_up_dt and gate_en_b);
+    nUSER_OPT_OUT(19) <= not (pwm_un_dt and gate_en_b);
+    nUSER_OPT_OUT(20) <= not (pwm_vp_dt and gate_en_b);
+    nUSER_OPT_OUT(21) <= not (pwm_vn_dt and gate_en_b);
+    nUSER_OPT_OUT(22) <= not (pwm_wp and gate_en_pwmc_b);
+    nUSER_OPT_OUT(23) <= not (pwm_wn and gate_en_pwmc_b);
 
 end Behavioral;
 

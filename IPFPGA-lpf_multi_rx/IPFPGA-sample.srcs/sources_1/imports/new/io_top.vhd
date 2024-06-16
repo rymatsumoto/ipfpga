@@ -112,13 +112,12 @@ architecture Behavioral of io_top is
 
             UPDATE    : in std_logic;
             CARRIER   : in std_logic_vector (15 downto 0);
-            CNT_REF_RECT : in std_logic_vector (15 downto 0);
             CNT_REF_PWMC : in std_logic_vector (15 downto 0);
             U_REF      : in std_logic_vector (15 downto 0);
             V_REF      : in std_logic_vector (15 downto 0);
             W_REF      : in std_logic_vector (15 downto 0);
             DEADTIME : in std_logic_vector (12 downto 0);
-            GATE_EN_RECT  : in std_logic;
+            GATE_EN  : in std_logic;
             GATE_EN_PWMC  : in std_logic;
             SYNC_IN  : in std_logic
         );
@@ -146,13 +145,12 @@ architecture Behavioral of io_top is
     signal test_reg      : std_logic_vector (31 downto 0);
 
     signal pwm_carrier_b   : std_logic_vector(15 downto 0);
-    signal ref_rect_b     : std_logic_vector(15 downto 0);
     signal ref_pwmc_b     : std_logic_vector(15 downto 0);
     signal pwm_u_ref_b    : std_logic_vector(15 downto 0);
     signal pwm_v_ref_b    : std_logic_vector(15 downto 0);
     signal pwm_w_ref_b    : std_logic_vector(15 downto 0);
     signal pwm_deadtime_b : std_logic_vector(12 downto 0);
-    signal pwm_gate_en_rect_b  : std_logic;
+    signal pwm_gate_en_b  : std_logic;
     signal pwm_gate_en_pwmc_b  : std_logic;
     signal pwm_update_b    : std_logic;
 
@@ -262,7 +260,7 @@ begin
                 pwm_v_ref_b <= X"09C4";
                 pwm_w_ref_b <= X"09C4";
                 pwm_deadtime_b <= '0' & X"190";
-                pwm_gate_en_rect_b <= '0';
+                pwm_gate_en_b <= '0';
                 pwm_gate_en_pwmc_b <= '0';
                 pwm_update_b <= '0';
                 gpio_16_23_out_b <= X"00";
@@ -277,11 +275,10 @@ begin
                     when X"03" => pwm_v_ref_b    <= wr_data_b(15 downto 0);
                     when X"04" => pwm_w_ref_b    <= wr_data_b(15 downto 0);
                     when X"05" => pwm_deadtime_b <= wr_data_b(12 downto 0);
-                    when X"06" => pwm_gate_en_rect_b  <= wr_data_b(0);
+                    when X"06" => pwm_gate_en_b  <= wr_data_b(0);
                     when X"07" => pwm_gate_en_pwmc_b  <= wr_data_b(0);
 --                    when X"07" => pwm_update_b   <= wr_data_b(0);
 
-                    when X"08" => ref_rect_b <= wr_data_b(15 downto 0);
                     when X"09" => ref_pwmc_b <= wr_data_b(15 downto 0);
                     
                     when X"10" => gpio_16_23_out_b <= wr_data_b(7 downto 0);
@@ -317,7 +314,7 @@ begin
                     when X"03" => rd_data_b <= X"0000" & pwm_v_ref_b;
                     when X"04" => rd_data_b <= X"0000" & pwm_w_ref_b;
                     when X"05" => rd_data_b <= X"0000" & B"000" & pwm_deadtime_b;
-                    when X"06" => rd_data_b <= X"0000" & X"000" & B"000" & pwm_gate_en_rect_b;
+                    when X"06" => rd_data_b <= X"0000" & X"000" & B"000" & pwm_gate_en_b;
                     when X"07" => rd_data_b <= X"0000" & X"000" & B"000" & pwm_gate_en_pwmc_b;
 --                    when X"07" => rd_data_b <= X"0000" & X"000" & B"000" & pwm_update_b;
 
@@ -505,13 +502,12 @@ begin
             --UPDATE    => pwm_update_b, -- Manual update
             UPDATE    => wr_start_ff, -- Automatic update
             CARRIER   => pwm_carrier_b,
-            CNT_REF_RECT => ref_rect_b,
             CNT_REF_PWMC => ref_pwmc_b,
             U_REF    => pwm_u_ref_b,
             V_REF    => pwm_v_ref_b,
             W_REF    => pwm_w_ref_b,
             DEADTIME => pwm_deadtime_b,
-            GATE_EN_RECT  => pwm_gate_en_rect_b,
+            GATE_EN  => pwm_gate_en_b,
             GATE_EN_PWMC  => pwm_gate_en_pwmc_b,
             SYNC_IN  => din_in_data_b(2)
         );
